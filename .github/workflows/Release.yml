@@ -37,13 +37,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "::group::Pushing OpenTelemetry-Swift-Api.podspec"
-          pod trunk push OpenTelemetry-Swift-Api.podspec --allow-warnings --synchronous
-          echo "::endgroup::"
+          # echo "::group::Pushing OpenTelemetry-Swift-Api.podspec"
+          # pod trunk push OpenTelemetry-Swift-Api.podspec --allow-warnings --synchronous
+          # echo "::endgroup::"
 
-          echo "::group::Pushing OpenTelemetry-Swift-Sdk.podspec"
-          pod trunk push OpenTelemetry-Swift-Sdk.podspec --allow-warnings --synchronous
-          echo "::endgroup::"
+          # echo "::group::Pushing OpenTelemetry-Swift-Sdk.podspec"
+          # pod trunk push OpenTelemetry-Swift-Sdk.podspec --allow-warnings --synchronous
+          # echo "::endgroup::"
           echo "status=ok" >> "$GITHUB_OUTPUT"
 
       - name: push non-critical cocoapods
@@ -107,12 +107,12 @@ jobs:
             if [[ -n "$OK" ]]; then
               echo "Succeeded: \`$OK\`"
             else
-              echo "Succeeded: (None)"
+              echo "Succeeded: None"
             fi
 
             if [[ -n "$FAILED" ]]; then
               echo "Failed: \`$FAILED\`"
             else
-              echo "Failed: (None)"
+              echo "Failed: All"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
