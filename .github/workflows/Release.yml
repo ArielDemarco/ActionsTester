@@ -37,9 +37,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # echo "::group::Pushing OpenTelemetry-Swift-Api.podspec"
-          # pod trunk push OpenTelemetry-Swift-Api.podspec --allow-warnings --synchronous
-          # echo "::endgroup::"
+           echo "::group::Pushing OpenTelemetry-Swift-Api.podspec"
+           pod trunk push OpenTelemetry-Swift-Api.podspec --allow-warnings --synchronous
+           echo "::endgroup::"
 
           # echo "::group::Pushing OpenTelemetry-Swift-Sdk.podspec"
           # pod trunk push OpenTelemetry-Swift-Sdk.podspec --allow-warnings --synchronous
