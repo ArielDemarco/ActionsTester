@@ -30,3 +30,89 @@ jobs:
             echo "Branch name must be release/x.y.z (got: $ref)" >&2
             exit 1
           fi
+      - name: push critical cocoapods (Api & Sdk)
+        id: pods_critical
+        env:
+          COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "::group::Pushing OpenTelemetry-Swift-Api.podspec"
+          pod trunk push OpenTelemetry-Swift-Api.podspec --allow-warnings --synchronous
+          echo "::endgroup::"
+
+          echo "::group::Pushing OpenTelemetry-Swift-Sdk.podspec"
+          pod trunk push OpenTelemetry-Swift-Sdk.podspec --allow-warnings --synchronous
+          echo "::endgroup::"
+          echo "status=ok" >> "$GITHUB_OUTPUT"
+
+      - name: push non-critical cocoapods
+        id: pods_noncritical
+        continue-on-error: true
+        env:
+          COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
+        shell: bash
+        run: |
+          set +e
+          SPECS=(
+            OpenTelemetry-Swift-BaggagePropagationProcessor.podspec
+            OpenTelemetry-Swift-Instrumentation-NetworkStatus.podspec
+            OpenTelemetry-Swift-Instrumentation-URLSession.podspec
+            OpenTelemetry-Swift-Protocol-Exporter-Common.podspec
+            OpenTelemetry-Swift-SdkResourceExtension.podspec
+            OpenTelemetry-Swift-Protocol-Exporter-Http.podspec
+            OpenTelemetry-Swift-PersistenceExporter.podspec
+            OpenTelemetry-Swift-StdoutExporter.podspec
+          )
+
+          OK=()
+          FAILED=()
+
+          for spec in "${SPECS[@]}"; do
+            echo "::group::Pushing $spec"
+            pod trunk push "$spec" --allow-warnings --synchronous
+            status=$?
+            echo "::endgroup::"
+            if [ $status -ne 0 ]; then
+              echo "❌ Failed: $spec"
+              FAILED+=("$spec")
+            else
+              echo "✅ OK: $spec"
+              OK+=("$spec")
+            fi
+          done
+
+          # Exporting lists for the summary
+          printf "ok=%s\n"      "$(IFS=,; echo "${OK[*]}")"      >> "$GITHUB_OUTPUT"
+          printf "failed=%s\n"  "$(IFS=,; echo "${FAILED[*]}")"  >> "$GITHUB_OUTPUT"
+      
+      - name: summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## CocoaPods push summary"
+            echo ""
+            echo "### Critical Pods (Api & Sdk)"
+            if [[ "${{ steps.pods_critical.outcomes }}${{ steps.pods_critical.outputs.status }}" == *"ok"* ]]; then
+              echo "**Api** and **Sdk** were published."
+            else
+              echo "Wasn't able to push critical pods."
+            fi
+            echo ""
+            echo "### Non-critical Pods"
+            OK="${{ steps.pods_noncritical.outputs.ok }}"
+            FAILED="${{ steps.pods_noncritical.outputs.failed }}"
+
+            if [[ -n "$OK" ]]; then
+              echo "Succeeded: \`$OK\`"
+            else
+              echo "Succeeded: (None)"
+            fi
+
+            if [[ -n "$FAILED" ]]; then
+              echo "Failed: \`$FAILED\`"
+            else
+              echo "Failed: (None)"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
